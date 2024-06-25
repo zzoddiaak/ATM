@@ -1,13 +1,13 @@
 import java.time.LocalDateTime;
 
 public class Card {
-    private String cardNumber;
+    private String[] cardNumber;
     private String pinCode;
     private double balance;
     private boolean isBlocked;
     private LocalDateTime blockTime;
 
-    public Card(String cardNumber, String pinCode, double balance, boolean isBlocked, LocalDateTime blockTime) {
+    public Card(String[] cardNumber, String pinCode, double balance, boolean isBlocked, LocalDateTime blockTime) {
         this.cardNumber = cardNumber;
         this.pinCode = pinCode;
         this.balance = balance;
@@ -17,11 +17,11 @@ public class Card {
 
     // Геттеры и сеттеры
 
-    public String getCardNumber() {
+    public String[] getCardNumber() {
         return cardNumber;
     }
 
-    public void setCardNumber(String cardNumber) {
+    public void setCardNumber(String[] cardNumber) {
         this.cardNumber = cardNumber;
     }
 
@@ -55,14 +55,5 @@ public class Card {
 
     public void setBlockTime(LocalDateTime blockTime) {
         this.blockTime = blockTime;
-    }
-
-    public boolean isBlockExpired() {
-        if (isBlocked && LocalDateTime.now().isAfter(blockTime.plusDays(1))) {
-            isBlocked = false;
-            blockTime = null;
-            return true;
-        }
-        return false;
     }
 }

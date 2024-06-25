@@ -11,9 +11,9 @@ public class ATMOperations {
         this.atmCash = ATM_MAX_CASH;
     }
 
-    public Card authenticate(String cardNumber, String pinCode) {
+    public Card authenticate(String[] cardNumber, String pinCode) {
         for (Card card : cards) {
-            if (card.getCardNumber().equals(cardNumber)) {
+            if (isEqual(card.getCardNumber(), cardNumber)) {
                 if (card.isBlocked()) {
                     if (LocalDateTime.now().isAfter(card.getBlockTime().plusDays(1))) {
                         card.setBlocked(false);
@@ -34,6 +34,18 @@ public class ATMOperations {
         }
         System.out.println("Карта не найдена.");
         return null;
+    }
+
+    private boolean isEqual(String[] cardNumber1, String[] cardNumber2) {
+        if (cardNumber1.length != cardNumber2.length) {
+            return false;
+        }
+        for (int i = 0; i < cardNumber1.length; i++) {
+            if (!cardNumber1[i].equals(cardNumber2[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void checkBalance(Card card) {
