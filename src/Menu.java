@@ -1,65 +1,96 @@
-import java.util.List;
 import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import exception.ATMLimitExceededException;
+import exception.CardBlockedException;
+import exception.CardNotFoundException;
+import exception.ExcessiveDepositException;
+import exception.InsufficientFundsException;
 
 public class Menu {
     private ATMOperations atmOperations;
     private CardRepository cardRepository;
+    private List<Card> cards;
     private Card currentCard;
-    private static final int MAX_ATTEMPTS = 3;
 
-    public Menu() {
-        cardRepository = new CardRepository();
-        List<Card> cards = cardRepository.loadCards();
-        atmOperations = new ATMOperations(cards);
+    public Menu(ATMOperations atmOperations, CardRepository cardRepository) {
+        this.atmOperations = atmOperations;
+        this.cardRepository = cardRepository;
+        this.cards = cardRepository.loadCards();
     }
 
-    public void start() {
-        Scanner scanner = new Scanner(System.in);
-        int attempts = 0;
-        while (attempts < MAX_ATTEMPTS) {
-            System.out.print("Введите номер карты (в формате ХХХХ ХХХХ ХХХХ ХХХХ): ");
-            String[] cardNumberParts = scanner.nextLine().split(" ");
-            System.out.print("Введите ПИН-код: ");
-            String pinCode = scanner.nextLine();
+    public void start(Scanner scanner) {
+        while (true) {
+            System.out.println("1. Ввести карту");
+            System.out.println("2. Добавить новую карту");
+            System.out.println("3. Выйти");
+            System.out.print("Выберите действие: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline character
 
-            currentCard = atmOperations.authenticate(cardNumberParts, pinCode);
+            switch (choice) {
+                case 1:
+                    authenticateCard(scanner);
+                    break;
+                case 2:
+                    addNewCard(scanner);
+                    break;
+                case 3:
+                    cardRepository.saveCards(cards);
+                    return;
+                default:
+                    System.out.println("Неверный выбор. Попробуйте снова.");
+            }
+        }
+    }
+
+    private void authenticateCard(Scanner scanner) {
+        System.out.print("Введите номер карты: ");
+        String cardNumber = scanner.nextLine();
+
+        System.out.print("Введите ПИН-код: ");
+        String pinCode = scanner.nextLine();
+
+        try {
+            currentCard = atmOperations.authenticate(cardNumber, pinCode);
             if (currentCard != null) {
                 showMenu(scanner);
-                cardRepository.saveCards(atmOperations.getCards());
-                break;
-            } else {
-                attempts++;
-                if (attempts == MAX_ATTEMPTS) {
-                    Card cardToBlock = findCardByNumber(cardNumberParts);
-                    if (cardToBlock != null) {
-                        System.out.println("Карта заблокирована из-за слишком большого количества неверных попыток.");
-                        atmOperations.blockCard(cardToBlock);
-                        cardRepository.saveCards(atmOperations.getCards());
-                    }
-                }
             }
+        } catch (CardNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (CardBlockedException e) {
+            LocalDateTime unblockTime = e.getBlockTime();
+            LocalDateTime now = LocalDateTime.now();
+            long hoursLeft = now.until(unblockTime, ChronoUnit.HOURS);
+            long minutesLeft = now.until(unblockTime, ChronoUnit.MINUTES) % 60;
+            long secondsLeft = now.until(unblockTime, ChronoUnit.SECONDS) % 60;
+
+            System.out.println(e.getMessage());
+            System.out.printf("Осталось времени до разблокировки: %d часов %d минут %d секунд\n",
+                    hoursLeft, minutesLeft, secondsLeft);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         }
     }
 
-    private Card findCardByNumber(String[] cardNumber) {
-        for (Card card : atmOperations.getCards()) {
-            if (isEqual(card.getCardNumber(), cardNumber)) {
-                return card;
-            }
-        }
-        return null;
-    }
+    private void addNewCard(Scanner scanner) {
+        System.out.print("Введите номер карты: ");
+        String cardNumber = scanner.nextLine();
 
-    private boolean isEqual(String[] cardNumber1, String[] cardNumber2) {
-        if (cardNumber1.length != cardNumber2.length) {
-            return false;
-        }
-        for (int i = 0; i < cardNumber1.length; i++) {
-            if (!cardNumber1[i].equals(cardNumber2[i])) {
-                return false;
-            }
-        }
-        return true;
+        System.out.print("Введите ПИН-код: ");
+        String pinCode = scanner.nextLine();
+
+        System.out.print("Введите начальный баланс: ");
+        double balance = scanner.nextDouble();
+        scanner.nextLine(); // consume newline character
+
+        Card newCard = new Card(cardNumber, pinCode, balance, false, null);
+        cards.add(newCard);
+        atmOperations.getCards().add(newCard);
+        cardRepository.saveCards(cards);
+        System.out.println("Карта успешно добавлена.");
     }
 
     private void showMenu(Scanner scanner) {
@@ -77,16 +108,24 @@ public class Menu {
                     atmOperations.checkBalance(currentCard);
                     break;
                 case 2:
-                    System.out.print("Введите сумму для снятия: ");
-                    double amount = scanner.nextDouble();
-                    scanner.nextLine(); // consume newline character
-                    atmOperations.withdraw(currentCard, amount);
+                    try {
+                        System.out.print("Введите сумму для снятия: ");
+                        double amount = scanner.nextDouble();
+                        scanner.nextLine(); // consume newline character
+                        atmOperations.withdraw(currentCard, amount);
+                    } catch (InsufficientFundsException | ATMLimitExceededException e) {
+                        System.out.println(e.getMessage());
+                    }
                     break;
                 case 3:
-                    System.out.print("Введите сумму для пополнения: ");
-                    amount = scanner.nextDouble();
-                    scanner.nextLine(); // consume newline character
-                    atmOperations.deposit(currentCard, amount);
+                    try {
+                        System.out.print("Введите сумму для пополнения: ");
+                        double amount = scanner.nextDouble();
+                        scanner.nextLine(); // consume newline character
+                        atmOperations.deposit(currentCard, amount);
+                    } catch (ExcessiveDepositException e) {
+                        System.out.println(e.getMessage());
+                    }
                     break;
                 case 4:
                     return;
