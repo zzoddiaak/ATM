@@ -1,6 +1,8 @@
+package model;
+
 import java.time.LocalDateTime;
 
-public class Card {
+public abstract class AbstractCard {
     private String cardNumber;
     private String pinCode;
     private double balance;
@@ -8,7 +10,7 @@ public class Card {
     private LocalDateTime blockTime;
     private int failedAttempts;
 
-    public Card(String cardNumber, String pinCode, double balance, boolean isBlocked, LocalDateTime blockTime) {
+    public AbstractCard(String cardNumber, String pinCode, double balance, boolean isBlocked, LocalDateTime blockTime) {
         this.cardNumber = cardNumber;
         this.pinCode = pinCode;
         this.balance = balance;

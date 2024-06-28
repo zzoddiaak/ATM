@@ -1,37 +1,33 @@
+package service.impl;
+
+import model.DebitCard;
+import repository.CardRepositoryInterface;
+import exception.*;
+import service.ATMServiceInterface;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import exception.ATMLimitExceededException;
-import exception.CardBlockedException;
-import exception.CardNotFoundException;
-import exception.ExcessiveDepositException;
-import exception.InsufficientFundsException;
-
-public class ATMOperations {
-    private List<Card> cards;
-    private CardRepository cardRepository;
+public class ATMService implements ATMServiceInterface {
+    private List<DebitCard> cards;
+    private CardRepositoryInterface cardRepository;
     private static final double ATM_MAX_CASH = 1000000.0;
     private double atmCash;
 
-    public ATMOperations(CardRepository cardRepository) {
+    public ATMService(CardRepositoryInterface cardRepository) {
         this.cardRepository = cardRepository;
-        this.cards = cardRepository.loadCards();
+        this.cards = cardRepository.loadDebitCards();
         this.atmCash = ATM_MAX_CASH;
     }
 
-    public Card authenticate(String cardNumber, String pinCode) throws CardNotFoundException, CardBlockedException {
-        Card foundCard = null;
-        for (Card card : cards) {
+    @Override
+    public DebitCard authenticate(String cardNumber, String pinCode) throws CardNotFoundException, CardBlockedException {
+        DebitCard foundCard = null;
+        for (DebitCard card : cards) {
             if (card.getCardNumber().equals(cardNumber)) {
                 if (card.isBlocked()) {
                     LocalDateTime now = LocalDateTime.now();
                     LocalDateTime unblockTime = card.getBlockTime().plusDays(1);
                     if (now.isBefore(unblockTime)) {
-                        long hoursLeft = now.until(unblockTime, ChronoUnit.HOURS);
-                        long minutesLeft = now.until(unblockTime, ChronoUnit.MINUTES) % 60;
-                        long secondsLeft = now.until(unblockTime, ChronoUnit.SECONDS) % 60;
-
                         throw new CardBlockedException(unblockTime);
                     } else {
                         card.setBlocked(false);
@@ -50,7 +46,7 @@ public class ATMOperations {
                     if (card.getFailedAttempts() >= 3) {
                         card.setBlocked(true);
                         card.setBlockTime(LocalDateTime.now());
-                        cardRepository.saveCards(cards);
+                        cardRepository.saveDebitCards(cards);
                         throw new CardBlockedException(card.getBlockTime());
                     } else {
                         throw new IllegalArgumentException("Неверный ПИН-код. Попыток осталось: " + (3 - card.getFailedAttempts()));
@@ -66,11 +62,13 @@ public class ATMOperations {
         return foundCard;
     }
 
-    public void checkBalance(Card card) {
+    @Override
+    public void checkBalance(DebitCard card) {
         System.out.println("Текущий баланс: " + card.getBalance());
     }
 
-    public void withdraw(Card card, double amount) throws InsufficientFundsException, ATMLimitExceededException {
+    @Override
+    public void withdraw(DebitCard card, double amount) throws InsufficientFundsException, ATMLimitExceededException {
         if (amount > card.getBalance()) {
             throw new InsufficientFundsException(amount);
         } else if (amount > atmCash) {
@@ -79,28 +77,30 @@ public class ATMOperations {
             card.setBalance(card.getBalance() - amount);
             atmCash -= amount;
             System.out.println("Операция успешна. Снято: " + amount);
-            cardRepository.saveCards(cards);
+            cardRepository.saveDebitCards(cards);
         }
     }
 
-    public void deposit(Card card, double amount) throws ExcessiveDepositException {
+    @Override
+    public void deposit(DebitCard card, double amount) throws ExcessiveDepositException {
         if (amount > 1000000) {
             throw new ExcessiveDepositException(amount);
         } else {
             card.setBalance(card.getBalance() + amount);
             atmCash += amount;
             System.out.println("Операция успешна. Пополнено: " + amount);
-            cardRepository.saveCards(cards);
+            cardRepository.saveDebitCards(cards);
         }
     }
 
-    public void blockCard(Card card) {
+    @Override
+    public void blockCard(DebitCard card) {
         card.setBlocked(true);
         card.setBlockTime(LocalDateTime.now());
-        cardRepository.saveCards(cards);
+        cardRepository.saveDebitCards(cards);
     }
 
-    public List<Card> getCards() {
+    public List<DebitCard> getCards() {
         return cards;
     }
 }

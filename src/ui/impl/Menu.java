@@ -1,26 +1,28 @@
-import java.util.Scanner;
+package ui.impl;
+
+import model.DebitCard;
+import repository.CardRepositoryInterface;
+import service.ATMServiceInterface;
+import exception.*;
+import ui.MenuInterface;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Scanner;
 
-import exception.ATMLimitExceededException;
-import exception.CardBlockedException;
-import exception.CardNotFoundException;
-import exception.ExcessiveDepositException;
-import exception.InsufficientFundsException;
+public class Menu implements MenuInterface {
+    private ATMServiceInterface atmOperations;
+    private CardRepositoryInterface cardRepository;
+    private List<DebitCard> cards;
+    private DebitCard currentCard;
 
-public class Menu {
-    private ATMOperations atmOperations;
-    private CardRepository cardRepository;
-    private List<Card> cards;
-    private Card currentCard;
-
-    public Menu(ATMOperations atmOperations, CardRepository cardRepository) {
+    public Menu(ATMServiceInterface atmOperations, CardRepositoryInterface cardRepository) {
         this.atmOperations = atmOperations;
         this.cardRepository = cardRepository;
-        this.cards = cardRepository.loadCards();
+        this.cards = cardRepository.loadDebitCards();
     }
 
+    @Override
     public void start(Scanner scanner) {
         while (true) {
             System.out.println("1. Ввести карту");
@@ -28,7 +30,7 @@ public class Menu {
             System.out.println("3. Выйти");
             System.out.print("Выберите действие: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // consume newline character
+            scanner.nextLine();
 
             switch (choice) {
                 case 1:
@@ -38,7 +40,7 @@ public class Menu {
                     addNewCard(scanner);
                     break;
                 case 3:
-                    cardRepository.saveCards(cards);
+                    cardRepository.saveDebitCards(cards);
                     return;
                 default:
                     System.out.println("Неверный выбор. Попробуйте снова.");
@@ -47,7 +49,7 @@ public class Menu {
     }
 
     private void authenticateCard(Scanner scanner) {
-        System.out.print("Введите номер карты: ");
+        System.out.print("Введите номер карты(XXXX-XXXX-XXXX-XXXX): ");
         String cardNumber = scanner.nextLine();
 
         System.out.print("Введите ПИН-код: ");
@@ -76,20 +78,20 @@ public class Menu {
     }
 
     private void addNewCard(Scanner scanner) {
-        System.out.print("Введите номер карты: ");
+        System.out.print("Введите номер карты(XXXX-XXXX-XXXX-XXXX): ");
         String cardNumber = scanner.nextLine();
 
         System.out.print("Введите ПИН-код: ");
         String pinCode = scanner.nextLine();
 
-        System.out.print("Введите начальный баланс: ");
+        System.out.print("Пополните начальный баланс: ");
         double balance = scanner.nextDouble();
-        scanner.nextLine(); // consume newline character
+        scanner.nextLine();
 
-        Card newCard = new Card(cardNumber, pinCode, balance, false, null);
+        DebitCard newCard = new DebitCard(cardNumber, pinCode, balance, false, null);
         cards.add(newCard);
         atmOperations.getCards().add(newCard);
-        cardRepository.saveCards(cards);
+        cardRepository.saveDebitCards(cards);
         System.out.println("Карта успешно добавлена.");
     }
 
@@ -101,7 +103,7 @@ public class Menu {
             System.out.println("4. Выйти");
             System.out.print("Выберите действие: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // consume newline character
+            scanner.nextLine();
 
             try {
                 switch (choice) {
@@ -111,13 +113,13 @@ public class Menu {
                     case 2:
                         System.out.print("Введите сумму для снятия: ");
                         double amount = scanner.nextDouble();
-                        scanner.nextLine(); // consume newline character
+                        scanner.nextLine();
                         atmOperations.withdraw(currentCard, amount);
                         break;
                     case 3:
                         System.out.print("Введите сумму для пополнения: ");
                         amount = scanner.nextDouble();
-                        scanner.nextLine(); // consume newline character
+                        scanner.nextLine();
                         atmOperations.deposit(currentCard, amount);
                         break;
                     case 4:
