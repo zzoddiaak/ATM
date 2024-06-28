@@ -1,7 +1,6 @@
 @echo off
-cd /d %~dp0out/production/ATM
+cd /d %~dp0
 
-java ATM
-
+java -cp out/production/ATM ATM
 
 pause

@@ -19,7 +19,6 @@ public abstract class AbstractCard {
         this.failedAttempts = 0;
     }
 
-    // Геттеры и сеттеры
 
     public String getCardNumber() {
         return cardNumber;
