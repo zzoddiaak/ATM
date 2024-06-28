@@ -36,16 +36,25 @@ public class ATMOperations {
                     } else {
                         card.setBlocked(false);
                         card.setBlockTime(null);
+                        card.resetFailedAttempts();
                         System.out.println("Блокировка карты автоматически снята.");
                     }
-                    return null;
                 }
 
                 if (card.getPinCode().equals(pinCode)) {
+                    card.resetFailedAttempts();
                     foundCard = card;
                     break;
                 } else {
-                    throw new IllegalArgumentException("Неверный ПИН-код.");
+                    card.incrementFailedAttempts();
+                    if (card.getFailedAttempts() >= 3) {
+                        card.setBlocked(true);
+                        card.setBlockTime(LocalDateTime.now());
+                        cardRepository.saveCards(cards);
+                        throw new CardBlockedException(card.getBlockTime());
+                    } else {
+                        throw new IllegalArgumentException("Неверный ПИН-код. Попыток осталось: " + (3 - card.getFailedAttempts()));
+                    }
                 }
             }
         }

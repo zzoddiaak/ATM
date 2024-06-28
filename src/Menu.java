@@ -103,34 +103,30 @@ public class Menu {
             int choice = scanner.nextInt();
             scanner.nextLine(); // consume newline character
 
-            switch (choice) {
-                case 1:
-                    atmOperations.checkBalance(currentCard);
-                    break;
-                case 2:
-                    try {
+            try {
+                switch (choice) {
+                    case 1:
+                        atmOperations.checkBalance(currentCard);
+                        break;
+                    case 2:
                         System.out.print("Введите сумму для снятия: ");
                         double amount = scanner.nextDouble();
                         scanner.nextLine(); // consume newline character
                         atmOperations.withdraw(currentCard, amount);
-                    } catch (InsufficientFundsException | ATMLimitExceededException e) {
-                        System.out.println(e.getMessage());
-                    }
-                    break;
-                case 3:
-                    try {
+                        break;
+                    case 3:
                         System.out.print("Введите сумму для пополнения: ");
-                        double amount = scanner.nextDouble();
+                        amount = scanner.nextDouble();
                         scanner.nextLine(); // consume newline character
                         atmOperations.deposit(currentCard, amount);
-                    } catch (ExcessiveDepositException e) {
-                        System.out.println(e.getMessage());
-                    }
-                    break;
-                case 4:
-                    return;
-                default:
-                    System.out.println("Неверный выбор. Попробуйте снова.");
+                        break;
+                    case 4:
+                        return;
+                    default:
+                        System.out.println("Неверный выбор. Попробуйте снова.");
+                }
+            } catch (InsufficientFundsException | ATMLimitExceededException | ExcessiveDepositException e) {
+                System.out.println(e.getMessage());
             }
         }
     }

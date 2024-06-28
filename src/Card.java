@@ -6,6 +6,7 @@ public class Card {
     private double balance;
     private boolean isBlocked;
     private LocalDateTime blockTime;
+    private int failedAttempts;
 
     public Card(String cardNumber, String pinCode, double balance, boolean isBlocked, LocalDateTime blockTime) {
         this.cardNumber = cardNumber;
@@ -13,6 +14,7 @@ public class Card {
         this.balance = balance;
         this.isBlocked = isBlocked;
         this.blockTime = blockTime;
+        this.failedAttempts = 0;
     }
 
     // Геттеры и сеттеры
@@ -55,5 +57,21 @@ public class Card {
 
     public void setBlockTime(LocalDateTime blockTime) {
         this.blockTime = blockTime;
+    }
+
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public void setFailedAttempts(int failedAttempts) {
+        this.failedAttempts = failedAttempts;
+    }
+
+    public void incrementFailedAttempts() {
+        this.failedAttempts++;
+    }
+
+    public void resetFailedAttempts() {
+        this.failedAttempts = 0;
     }
 }
